@@ -1,16 +1,19 @@
 "use client"
 
 import { useState } from "react"
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+
+import { toast } from "sonner"
 
 import type { VerifikasiItem } from "../VerifikasiClient"
 
@@ -25,82 +28,138 @@ export default function VerifikasiModal({
   onClose,
   onSave,
 }: Props) {
-  const [form, setForm] = useState<VerifikasiItem>(data)
 
-  const handleChange = (key: keyof VerifikasiItem, value: any) => {
-    setForm((prev) => ({ ...prev, [key]: value }))
-  }
+  const [komentar, setKomentar] =
+    useState(data.komentar_verifikator || "")
+
+  const [status, setStatus] =
+    useState<VerifikasiItem["status"]>(
+      data.status
+    )
 
   const handleSubmit = () => {
-    onSave(form)
+
+    if (!komentar) {
+
+      toast.error(
+        "Komentar verifikator harus diisi"
+      )
+
+      return
+    }
+
+    const updated: VerifikasiItem = {
+
+      ...data,
+
+      komentar_verifikator: komentar,
+
+      status,
+    }
+
+    onSave(updated)
+
+    toast.success(
+      "Verifikasi laporan berhasil"
+    )
+
     onClose()
   }
 
   return (
+
     <Dialog open onOpenChange={onClose}>
+
       <DialogContent>
+
         <DialogHeader>
-          <DialogTitle>Verifikasi Laporan</DialogTitle>
+
+          <DialogTitle>
+            Verifikasi Laporan
+          </DialogTitle>
+
         </DialogHeader>
 
         <div className="space-y-4">
+
+          {/* KOMENTAR */}
+
           <div>
-            <Label>Komentar Verifikator</Label>
+
+            <Label>
+              Komentar Verifikator
+            </Label>
+
             <Textarea
-              value={form.komentar_verifikator || ""}
+              value={komentar}
               onChange={(e) =>
-                handleChange("komentar_verifikator", e.target.value)
+                setKomentar(e.target.value)
               }
+              placeholder="Tuliskan komentar hasil verifikasi..."
             />
+
+            <p className="text-xs text-muted-foreground mt-1">
+              Berikan catatan atau evaluasi
+              terhadap laporan kinerja
+            </p>
+
           </div>
 
-          <div>
-            <Label>Ketepatan Waktu (%)</Label>
-            <Input
-              type="number"
-              value={form.ketepatan_waktu || ""}
-              onChange={(e) =>
-                handleChange("ketepatan_waktu", Number(e.target.value))
-              }
-            />
-          </div>
+          {/* STATUS */}
 
           <div>
-            <Label>Kualitas</Label>
+
+            <Label>Status Verifikasi</Label>
+
             <select
               className="w-full border rounded-md p-2"
-              value={form.kualitas || ""}
+              value={status}
               onChange={(e) =>
-                handleChange("kualitas", e.target.value)
+                setStatus(
+                  e.target.value as VerifikasiItem["status"]
+                )
               }
             >
-              <option value="">Pilih</option>
-              <option value="sangat baik">Sangat Baik</option>
-              <option value="baik">Baik</option>
-              <option value="cukup">Cukup</option>
-            </select>
-          </div>
 
-          <div>
-            <Label>Saran</Label>
-            <Textarea
-              value={form.saran || ""}
-              onChange={(e) =>
-                handleChange("saran", e.target.value)
-              }
-            />
+              <option value="menunggu">
+                Menunggu
+              </option>
+
+              <option value="disetujui">
+                Disetujui
+              </option>
+
+              <option value="revisi">
+                Perlu Revisi
+              </option>
+
+            </select>
+
+            <p className="text-xs text-muted-foreground mt-1">
+              Pilih hasil verifikasi laporan
+            </p>
+
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
+
+            <Button
+              variant="outline"
+              onClick={onClose}
+            >
               Batal
             </Button>
+
             <Button onClick={handleSubmit}>
               Simpan
             </Button>
+
           </div>
+
         </div>
+
       </DialogContent>
+
     </Dialog>
   )
 }

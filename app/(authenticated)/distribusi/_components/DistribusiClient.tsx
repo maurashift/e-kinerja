@@ -1,217 +1,229 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
+
 import DistribusiTable from "./DistribusiTable"
-import AssignDistribusiModal from "../_components/modals/AssignDistribusiModal"
+import AssignDistribusiModal from "./modals/AssignDistribusiModal"
 
 export interface DistribusiItem {
   id: string
-  pemda: string
-  nama_aplikasi: string
-  menu: string
-  deadline: string
-  pelaksana: string[]
+  permintaan: string
+  admin: string
+  programmer: string[]
   komentar_admin: string
-  status: "Assigned"
+  created_at: string
 }
 
 export interface MasterPegawaiItem {
   id: string
   nama_pegawai: string
   jabatan: string
-  email: string
 }
 
-/* ================= MASTER PEGAWAI ================= */
-const masterPegawai: MasterPegawaiItem[] = [
-  { id: "1", nama_pegawai: "ASEP SURYANA", jabatan: "Programmer - Level 1", email: "" },
-  { id: "2", nama_pegawai: "LINA WULANDARI", jabatan: "Programmer - Level 1", email: "" },
-  { id: "3", nama_pegawai: "RIZKY MAULANA", jabatan: "Programmer - Level 1", email: "" },
-  { id: "4", nama_pegawai: "ANDI WIJAYA", jabatan: "Programmer - Level 1", email: "" },
-]
-
-/* ================= DUMMY PERMINTAAN ================= */
-const initialPermintaan = [
-  {
-    id: "req-1",
-    pemda: "Pemda Kota Surabaya",
-    nama_aplikasi: "E-Surat",
-    menu: "Arsip",
-    deadline: "2025-06-20",
-  },
-  {
-    id: "req-2",
-    pemda: "Pemda Kota Bandung",
-    nama_aplikasi: "E-Kinerja",
-    menu: "Dashboard",
-    deadline: "2025-06-15",
-  },
-]
-
-/* ================= DUMMY DISTRIBUSI ================= */
-const dummyDistribusi: DistribusiItem[] = [
-  {
-    id: "1",
-    pemda: "Pemda Kota Malang",
-    nama_aplikasi: "E-Planning",
-    menu: "Laporan",
-    deadline: "2025-06-25",
-    pelaksana: ["ASEP SURYANA"],
-    komentar_admin: "Prioritas tinggi",
-    status: "Assigned",
-  },
-  {
-    id: "2",
-    pemda: "Pemda Kota Bogor",
-    nama_aplikasi: "E-Kinerja",
-    menu: "Dashboard",
-    deadline: "2025-06-18",
-    pelaksana: ["RIZKY MAULANA", "LINA WULANDARI"],
-    komentar_admin: "Deadline ketat",
-    status: "Assigned",
-  },
-]
-
 export default function DistribusiClient() {
-  const [permintaan, setPermintaan] = useState(initialPermintaan)
-  const [distribusi, setDistribusi] =
-    useState<DistribusiItem[]>(dummyDistribusi)
 
-  const [selectedItem, setSelectedItem] = useState<any>(null)
-  const [editItem, setEditItem] =
-    useState<DistribusiItem | null>(null)
+  const masterPegawai: MasterPegawaiItem[] = [
+    {
+      id: "1",
+      nama_pegawai: "ASEP SURYANA",
+      jabatan: "Programmer - Level 1",
+    },
+    {
+      id: "2",
+      nama_pegawai: "RIZKY MAULANA",
+      jabatan: "Programmer - Level 1",
+    },
+    {
+      id: "3",
+      nama_pegawai: "LINA WULANDARI",
+      jabatan: "Programmer - Level 1",
+    },
+  ]
 
-  /* ================= ASSIGN ================= */
-  const handleAssign = (
-    requestId: string,
-    val: { programmer: string[]; komentar_admin: string }
-  ) => {
-    const request = permintaan.find(p => p.id === requestId)
-    if (!request) return
+  const [permintaan, setPermintaan] = useState([
+    {
+      id: "p1",
+      pemda: "Pemda Kota Bandung",
+      aplikasi: "E-Kinerja",
+      menu: "Dashboard",
+      deadline: "2025-06-15",
+    },
+    {
+      id: "p2",
+      pemda: "Pemda Kota Surabaya",
+      aplikasi: "E-Kinerja",
+      menu: "Laporan",
+      deadline: "2025-06-20",
+    },
+  ])
 
-    const programmerNames = masterPegawai
-      .filter(p => val.programmer.includes(p.id))
-      .map(p => p.nama_pegawai)
+  const [dataDistribusi, setDataDistribusi] =
+    useState<DistribusiItem[]>([
+      {
+        id: "1",
+        permintaan: "Pemda Kota Bandung - Dashboard",
+        admin: "Maura",
+        programmer: ["ASEP SURYANA"],
+        komentar_admin: "Prioritas tinggi",
+        created_at: "2025-03-05",
+      },
+      {
+        id: "2",
+        permintaan: "Pemda Kota Bandung - Dashboard",
+        admin: "Maura",
+        programmer: ["RIZKY MAULANA", "LINA WULANDARI"],
+        komentar_admin: "Deadline ketat",
+        created_at: "2025-03-06",
+      },
+    ])
 
-    const newDistribusi: DistribusiItem = {
-      id: Date.now().toString(),
-      pemda: request.pemda,
-      nama_aplikasi: request.nama_aplikasi,
-      menu: request.menu,
-      deadline: request.deadline,
-      pelaksana: programmerNames,
-      komentar_admin: val.komentar_admin,
-      status: "Assigned",
-    }
+  const [modalData, setModalData] = useState<any>(null)
+  const [mode, setMode] =
+    useState<"assign" | "edit">("assign")
 
-    setDistribusi(prev => [...prev, newDistribusi])
-    setPermintaan(prev => prev.filter(p => p.id !== requestId))
+  const handleAssign = (item: any) => {
+    setMode("assign")
+    setModalData(item)
   }
 
-  /* ================= DELETE ================= */
-  const handleDelete = (id: string) => {
-    setDistribusi(prev => prev.filter(d => d.id !== id))
+  const handleEdit = (item: DistribusiItem) => {
+    setMode("edit")
+    setModalData(item)
   }
 
-  /* ================= EDIT ================= */
-  const handleEditSave = (val: {
+  const handleSaveDistribusi = (val: {
+    permintaan_id: string
     programmer: string[]
     komentar_admin: string
   }) => {
-    if (!editItem) return
 
-    const programmerNames = masterPegawai
-      .filter(p => val.programmer.includes(p.id))
-      .map(p => p.nama_pegawai)
+    const programmerNames = val.programmer.map(id => {
+      const pegawai =
+        masterPegawai.find(p => p.id === id)
+      return pegawai?.nama_pegawai || ""
+    })
 
-    setDistribusi(prev =>
-      prev.map(item =>
-        item.id === editItem.id
-          ? {
-              ...item,
-              pelaksana: programmerNames,
-              komentar_admin: val.komentar_admin,
-            }
-          : item
+    const permintaanSelected =
+      permintaan.find(p => p.id === val.permintaan_id)
+
+    if (!permintaanSelected) return
+
+    if (mode === "assign") {
+
+      const newItem: DistribusiItem = {
+        id: crypto.randomUUID(),
+        permintaan: `${permintaanSelected.pemda} - ${permintaanSelected.menu}`,
+        admin: "Maura",
+        programmer: programmerNames,
+        komentar_admin: val.komentar_admin,
+        created_at: new Date().toISOString().slice(0,10),
+      }
+
+      setDataDistribusi(prev => [...prev, newItem])
+
+      setPermintaan(prev =>
+        prev.filter(p => p.id !== permintaanSelected.id)
       )
+
+      toast.success("Distribusi berhasil dibuat")
+
+    } else {
+
+      setDataDistribusi(prev =>
+        prev.map(item =>
+          item.id === modalData.id
+            ? {
+                ...item,
+                permintaan: `${permintaanSelected.pemda} - ${permintaanSelected.menu}`,
+                programmer: programmerNames,
+                komentar_admin: val.komentar_admin,
+              }
+            : item
+        )
+      )
+
+      toast.success("Distribusi berhasil diperbarui")
+    }
+
+    setModalData(null)
+  }
+
+  const handleDelete = (id: string) => {
+
+    setDataDistribusi(prev =>
+      prev.filter(item => item.id !== id)
     )
 
-    setEditItem(null)
+    toast.success("Distribusi berhasil dihapus")
   }
 
   return (
-    <div className="px-4 space-y-6">
 
-      <h2 className="text-2xl font-semibold">
+    <div className="space-y-6">
+
+      <h2 className="text-xl font-semibold">
         Distribusi Pekerjaan
       </h2>
 
-      {/* ================= PERMINTAAN MASUK ================= */}
-      {permintaan.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-medium">
-            Permintaan Masuk
-          </h3>
+      <div className="space-y-4">
 
-          {permintaan.map(item => (
-            <div
-              key={item.id}
-              className="border rounded-md p-4 flex justify-between items-center"
-            >
-              <div>
-                <p className="font-medium">{item.pemda}</p>
-                <p className="text-sm text-muted-foreground">
-                  {item.nama_aplikasi} - {item.menu}
-                </p>
-                <p className="text-sm">
-                  Deadline: {item.deadline}
-                </p>
+        {permintaan.map(item => (
+
+          <div
+            key={item.id}
+            className="flex justify-between items-center border rounded-lg p-4"
+          >
+
+            <div>
+
+              <div className="font-medium">
+                {item.pemda}
               </div>
 
-              <Button
-                size="sm"
-                onClick={() => setSelectedItem(item)}
-              >
-                Distribusikan
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+              <div className="text-muted-foreground text-sm">
+                {item.aplikasi} - {item.menu}
+              </div>
 
-      {/* ================= TABEL ================= */}
+              <div className="text-sm">
+                Deadline: {item.deadline}
+              </div>
+
+            </div>
+
+            <button
+              className="bg-primary text-white px-4 py-2 rounded-md"
+              onClick={() => handleAssign(item)}
+            >
+              Distribusikan
+            </button>
+
+          </div>
+
+        ))}
+
+      </div>
+
       <DistribusiTable
-        data={distribusi}
+        data={dataDistribusi}
+        onEdit={handleEdit}
         onDelete={handleDelete}
-        onEdit={(item) => setEditItem(item)}
       />
 
-      {/* ================= MODAL ASSIGN ================= */}
-      {selectedItem && (
-        <AssignDistribusiModal
-          data={selectedItem}
-          masterPegawai={masterPegawai}
-          onClose={() => setSelectedItem(null)}
-          onSave={(val) => {
-            handleAssign(selectedItem.id, val)
-            setSelectedItem(null)
-          }}
-          mode="assign"
-        />
-      )}
+      {modalData && (
 
-      {/* ================= MODAL EDIT ================= */}
-      {editItem && (
         <AssignDistribusiModal
-          data={editItem}
+          data={modalData}
           masterPegawai={masterPegawai}
-          onClose={() => setEditItem(null)}
-          onSave={handleEditSave}
-          mode="edit"
+          permintaanList={permintaan}
+          mode={mode}
+          onClose={() => setModalData(null)}
+          onSave={handleSaveDistribusi}
         />
+
       )}
 
     </div>
+
   )
 }

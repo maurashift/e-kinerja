@@ -14,6 +14,7 @@ export default function EditPermintaan({
   onClose,
   onSave,
 }: Props) {
+
   return (
     <AddPermintaan
       initialData={data}
@@ -21,4 +22,5 @@ export default function EditPermintaan({
       onSave={onSave}
     />
   )
+
 }

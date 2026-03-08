@@ -8,6 +8,18 @@ interface Props {
   data: LaporanKinerjaItem | null
   onClose: () => void
   onSave: (item: LaporanKinerjaItem) => void
+
+  permintaanList: {
+    id: string
+    pemda: string
+    menu: string
+  }[]
+
+  masterPegawai: {
+    id: string
+    nama_pegawai: string
+    jabatan: string
+  }[]
 }
 
 export default function EditLaporanKinerja({
@@ -15,7 +27,10 @@ export default function EditLaporanKinerja({
   data,
   onClose,
   onSave,
+  permintaanList,
+  masterPegawai,
 }: Props) {
+
   if (!data) return null
 
   return (
@@ -24,6 +39,8 @@ export default function EditLaporanKinerja({
       onClose={onClose}
       onSave={onSave}
       initialData={data}
+      permintaanList={permintaanList}
+      masterPegawai={masterPegawai}
     />
   )
 }

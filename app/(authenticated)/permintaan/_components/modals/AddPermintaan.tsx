@@ -4,6 +4,7 @@ import { useState } from "react"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 import type { PermintaanItem } from "../PermintaanClient"
 
@@ -18,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 import {
   Popover,
@@ -45,6 +47,7 @@ export default function AddPermintaan({
     menu: initialData?.menu || "",
     kondisi_awal: initialData?.kondisi_awal || "",
     kondisi_diharapkan: initialData?.kondisi_diharapkan || "",
+    dibuat_oleh: initialData?.dibuat_oleh || "",
   })
 
   const [tanggalPesanan, setTanggalPesanan] = useState<Date | undefined>(
@@ -59,46 +62,37 @@ export default function AddPermintaan({
       : undefined
   )
 
-  const [jamDeadline, setJamDeadline] = useState(
-    initialData?.jam_deadline || ""
-  )
-
-  const [attachments, setAttachments] = useState<File[]>(
-    initialData?.attachments || []
-  )
-
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = e.target.files
-    if (!files) return
-    setAttachments(prev => [...prev, ...Array.from(files)])
-  }
-
-  const handleSubmit = () => {
-    onSave({
-      id: initialData?.id || crypto.randomUUID(),
-      ...form,
-      tanggal_pesanan: tanggalPesanan
-        ? format(tanggalPesanan, "yyyy-MM-dd")
-        : "",
-      jam_pesanan: "", // dihapus
-      tanggal_deadline: tanggalDeadline
-        ? format(tanggalDeadline, "yyyy-MM-dd")
-        : "",
-      jam_deadline: jamDeadline,
-      attachments,
-    })
-  }
-
-  const FieldNote = () => (
-    <p className="text-[11px] text-muted-foreground">
-      * Wajib diisi
+  const FieldNote = ({ label }: { label: string }) => (
+    <p className="text-xs text-muted-foreground mt-1">
+      * {label} harus diisi
     </p>
   )
 
+  const handleSubmit = () => {
+
+    if (!form.pemda) return toast.error("Pemda harus diisi")
+    if (!form.nama_aplikasi) return toast.error("Aplikasi harus diisi")
+    if (!form.menu) return toast.error("Menu harus diisi")
+    if (!form.kondisi_awal) return toast.error("Kondisi awal harus diisi")
+    if (!form.kondisi_diharapkan) return toast.error("Kondisi yang diharapkan harus diisi")
+    if (!tanggalPesanan) return toast.error("Tanggal pesanan harus diisi")
+    if (!tanggalDeadline) return toast.error("Deadline harus diisi")
+    if (!form.dibuat_oleh) return toast.error("Dibuat oleh harus diisi")
+
+    onSave({
+      id: initialData?.id || crypto.randomUUID(),
+      ...form,
+      tanggal_pesanan: format(tanggalPesanan, "yyyy-MM-dd"),
+      tanggal_deadline: format(tanggalDeadline, "yyyy-MM-dd"),
+      created_at: new Date().toISOString().slice(0,10),
+    })
+
+  }
+
   return (
+
     <Dialog open onOpenChange={onClose}>
+
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
 
         <DialogHeader>
@@ -107,172 +101,208 @@ export default function AddPermintaan({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-6">
 
           {/* PEMDA */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Pemda</label>
-            <Input
-              className="h-9"
-              value={form.pemda}
-              onChange={e =>
-                setForm({ ...form, pemda: e.target.value })
-              }
-            />
-            <FieldNote />
+          <div>
+            <Label className="uppercase text-xs font-semibold">Pemda :</Label>
+            <div className="mt-2">
+              <Input
+                value={form.pemda}
+                onChange={e =>
+                  setForm({ ...form, pemda: e.target.value })
+                }
+              />
+            </div>
+            <FieldNote label="Pemda" />
           </div>
 
-          {/* NAMA APLIKASI */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Nama Aplikasi</label>
-            <Input
-              className="h-9"
-              value={form.nama_aplikasi}
-              onChange={e =>
-                setForm({ ...form, nama_aplikasi: e.target.value })
-              }
-            />
-            <FieldNote />
+          {/* APLIKASI */}
+          <div>
+            <Label className="uppercase text-xs font-semibold">Aplikasi :</Label>
+            <div className="mt-2">
+              <Input
+                value={form.nama_aplikasi}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    nama_aplikasi: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <FieldNote label="Aplikasi" />
           </div>
 
           {/* MENU */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Menu</label>
-            <Input
-              className="h-9"
-              value={form.menu}
-              onChange={e =>
-                setForm({ ...form, menu: e.target.value })
-              }
-            />
-            <FieldNote />
+          <div>
+            <Label className="uppercase text-xs font-semibold">Menu :</Label>
+            <div className="mt-2">
+              <Input
+                value={form.menu}
+                onChange={e =>
+                  setForm({ ...form, menu: e.target.value })
+                }
+              />
+            </div>
+            <FieldNote label="Menu" />
           </div>
 
           {/* KONDISI AWAL */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Kondisi Awal</label>
-            <Textarea
-              className="min-h-[70px]"
-              value={form.kondisi_awal}
-              onChange={e =>
-                setForm({ ...form, kondisi_awal: e.target.value })
-              }
-            />
-            <FieldNote />
+          <div>
+            <Label className="uppercase text-xs font-semibold">Kondisi Awal :</Label>
+            <div className="mt-2">
+              <Textarea
+                value={form.kondisi_awal}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    kondisi_awal: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <FieldNote label="Kondisi awal" />
           </div>
 
           {/* KONDISI DIHARAPKAN */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Kondisi yang Diharapkan
-            </label>
-            <Textarea
-              className="min-h-[70px]"
-              value={form.kondisi_diharapkan}
-              onChange={e =>
-                setForm({
-                  ...form,
-                  kondisi_diharapkan: e.target.value,
-                })
-              }
-            />
-            <FieldNote />
+          <div>
+            <Label className="uppercase text-xs font-semibold">Kondisi Diharapkan :</Label>
+            <div className="mt-2">
+              <Textarea
+                value={form.kondisi_diharapkan}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    kondisi_diharapkan: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <FieldNote label="Kondisi yang diharapkan" />
           </div>
 
           {/* TANGGAL PESANAN */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Tanggal Pesanan</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full h-9 justify-start text-left font-normal",
-                    !tanggalPesanan && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {tanggalPesanan
-                    ? format(tanggalPesanan, "PPP")
-                    : "Pilih tanggal"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <Calendar
-                  mode="single"
-                  selected={tanggalPesanan}
-                  onSelect={setTanggalPesanan}
-                />
-              </PopoverContent>
-            </Popover>
-            <FieldNote />
+          <div>
+            <Label className="uppercase text-xs font-semibold">Tanggal Pesanan :</Label>
+
+            <div className="mt-2">
+
+              <Popover>
+                <PopoverTrigger asChild>
+
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !tanggalPesanan && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+
+                    {tanggalPesanan
+                      ? format(tanggalPesanan, "PPP")
+                      : "Pilih tanggal"}
+
+                  </Button>
+
+                </PopoverTrigger>
+
+                <PopoverContent>
+                  <Calendar
+                    mode="single"
+                    selected={tanggalPesanan}
+                    onSelect={setTanggalPesanan}
+                  />
+                </PopoverContent>
+
+              </Popover>
+
+            </div>
+
+            <FieldNote label="Tanggal pesanan" />
+
           </div>
 
-          {/* TANGGAL DEADLINE */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Tanggal Deadline</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full h-9 justify-start text-left font-normal",
-                    !tanggalDeadline && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {tanggalDeadline
-                    ? format(tanggalDeadline, "PPP")
-                    : "Pilih tanggal"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <Calendar
-                  mode="single"
-                  selected={tanggalDeadline}
-                  onSelect={setTanggalDeadline}
-                />
-              </PopoverContent>
-            </Popover>
-            <FieldNote />
+          {/* DEADLINE */}
+          <div>
+            <Label className="uppercase text-xs font-semibold">Deadline :</Label>
+
+            <div className="mt-2">
+
+              <Popover>
+                <PopoverTrigger asChild>
+
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !tanggalDeadline && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+
+                    {tanggalDeadline
+                      ? format(tanggalDeadline, "PPP")
+                      : "Pilih tanggal"}
+
+                  </Button>
+
+                </PopoverTrigger>
+
+                <PopoverContent>
+                  <Calendar
+                    mode="single"
+                    selected={tanggalDeadline}
+                    onSelect={setTanggalDeadline}
+                  />
+                </PopoverContent>
+
+              </Popover>
+
+            </div>
+
+            <FieldNote label="Deadline" />
+
           </div>
 
-          {/* JAM DEADLINE */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Jam Deadline</label>
-            <Input
-              className="h-9"
-              type="time"
-              value={jamDeadline}
-              onChange={e => setJamDeadline(e.target.value)}
-            />
-            <FieldNote />
-          </div>
+          {/* DIBUAT OLEH */}
+          <div>
+            <Label className="uppercase text-xs font-semibold">Dibuat Oleh :</Label>
 
-          {/* ATTACHMENT */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium">
-              Attachment (Opsional)
-            </label>
-            <Input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-            />
+            <div className="mt-2">
+              <Input
+                value={form.dibuat_oleh}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    dibuat_oleh: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <FieldNote label="Dibuat oleh" />
           </div>
 
         </div>
 
         <DialogFooter className="pt-4">
+
           <Button variant="outline" onClick={onClose}>
             Batal
           </Button>
+
           <Button onClick={handleSubmit}>
             Simpan
           </Button>
+
         </DialogFooter>
 
       </DialogContent>
+
     </Dialog>
+
   )
+
 }

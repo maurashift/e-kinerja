@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { useState } from "react"
+
 import {
   ColumnDef,
   flexRender,
@@ -18,71 +20,108 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import { Button } from "@/components/ui/button"
+
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogDescription,
 } from "@/components/ui/alert-dialog"
 
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
+
 import type { DistribusiItem } from "./DistribusiClient"
 
 interface Props {
   data: DistribusiItem[]
-  onDelete: (id: string) => void
   onEdit: (item: DistribusiItem) => void
+  onDelete: (id: string) => void
 }
 
 export default function DistribusiTable({
   data,
-  onDelete,
   onEdit,
+  onDelete,
 }: Props) {
 
-  const [deleteId, setDeleteId] =
-    React.useState<string | null>(null)
+  const [openDelete, setOpenDelete] = useState(false)
+  const [selectedRow, setSelectedRow] =
+    useState<DistribusiItem | null>(null)
 
-  const [pagination, setPagination] = React.useState({
-    pageIndex: 0,
-    pageSize: 10,
-  })
+  const handleDeleteClick = (row: DistribusiItem) => {
+    setSelectedRow(row)
+    setOpenDelete(true)
+  }
 
-  const columns: ColumnDef<DistribusiItem>[] = [
+  const confirmDelete = () => {
+
+    if (!selectedRow) return
+
+    onDelete(selectedRow.id)
+
+    toast.success("Distribusi berhasil dihapus")
+
+    setOpenDelete(false)
+    setSelectedRow(null)
+  }
+
+const columns: ColumnDef<DistribusiItem>[] = [
+
+  {
+    header: "No",
+    cell: ({ row }) => (
+      <div className="text-center">
+        {row.index + 1}
+      </div>
+    ),
+  },
+
+  {
+    accessorKey: "permintaan",
+    header: "Permintaan",
+  },
+
+  {
+    accessorKey: "admin",
+    header: "Admin",
+  },
+
     {
-      header: "No",
-      cell: ({ row, table }) => {
-        const { pageIndex, pageSize } =
-          table.getState().pagination
-        return pageIndex * pageSize + row.index + 1
-      },
-    },
-    { accessorKey: "pemda", header: "Pemda" },
-    { accessorKey: "menu", header: "Menu" },
-    {
-      header: "Pelaksana",
-      cell: ({ row }) =>
-        row.original.pelaksana.join(", "),
-    },
-    { accessorKey: "komentar_admin", header: "Komentar Admin" },
-    { accessorKey: "deadline", header: "Deadline" },
-    {
-      header: "Status",
+      header: "Programmer",
       cell: ({ row }) => (
-        <Badge variant="secondary">
-          {row.original.status}
-        </Badge>
+        <div className="flex flex-wrap gap-2">
+          {row.original.programmer.map((p, i) => (
+            <span
+              key={i}
+              className="bg-muted px-2 py-1 rounded text-xs"
+            >
+              {p}
+            </span>
+          ))}
+        </div>
       ),
     },
+
+    {
+      accessorKey: "komentar_admin",
+      header: "Komentar",
+    },
+
+    {
+      accessorKey: "created_at",
+      header: "Created At",
+    },
+
     {
       header: "Aksi",
       cell: ({ row }) => (
         <div className="flex gap-2">
+
           <Button
             size="sm"
             variant="outline"
@@ -90,15 +129,15 @@ export default function DistribusiTable({
           >
             Edit
           </Button>
+
           <Button
             size="sm"
             variant="destructive"
-            onClick={() =>
-              setDeleteId(row.original.id)
-            }
+            onClick={() => handleDeleteClick(row.original)}
           >
             Hapus
           </Button>
+
         </div>
       ),
     },
@@ -107,113 +146,112 @@ export default function DistribusiTable({
   const table = useReactTable({
     data,
     columns,
-    state: { pagination },
-    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   })
 
   return (
-    <div className="space-y-4">
 
-      <h3 className="text-lg font-medium">
-        Sudah Didistribusikan
-      </h3>
+    <>
 
-      <div className="rounded-md border">
+      <div className="border rounded-md">
+
         <Table>
+
           <TableHeader className="bg-muted">
-            {table.getHeaderGroups().map(headerGroup => (
+
+            {table.getHeaderGroups().map((headerGroup) => (
+
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
+
+                {headerGroup.headers.map((header) => (
+
                   <TableHead key={header.id}>
+
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext()
                     )}
+
                   </TableHead>
+
                 ))}
+
               </TableRow>
+
             ))}
+
           </TableHeader>
 
           <TableBody>
-            {table.getRowModel().rows.map(row => (
+
+            {table.getRowModel().rows.map((row) => (
+
               <TableRow key={row.id}>
-                {row.getVisibleCells().map(cell => (
+
+                {row.getVisibleCells().map((cell) => (
+
                   <TableCell key={cell.id}>
+
                     {flexRender(
                       cell.column.columnDef.cell,
                       cell.getContext()
                     )}
+
                   </TableCell>
+
                 ))}
+
               </TableRow>
+
             ))}
+
           </TableBody>
+
         </Table>
+
       </div>
 
-      <div className="flex justify-between text-sm">
-        <div>
-          Page {pagination.pageIndex + 1} of {table.getPageCount()}
-        </div>
-        <div className="space-x-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      {/* DELETE MODAL */}
 
-      {/* ALERT DELETE */}
       <AlertDialog
-        open={!!deleteId}
-        onOpenChange={(open) => {
-          if (!open) setDeleteId(null)
-        }}
+        open={openDelete}
+        onOpenChange={setOpenDelete}
       >
+
         <AlertDialogContent>
+
           <AlertDialogHeader>
+
             <AlertDialogTitle>
-              Yakin ingin menghapus?
+              Hapus data distribusi?
             </AlertDialogTitle>
+
             <AlertDialogDescription>
-              Data distribusi akan dihapus permanen.
+              Data yang sudah dihapus tidak dapat dikembalikan.
             </AlertDialogDescription>
+
           </AlertDialogHeader>
 
           <AlertDialogFooter>
+
             <AlertDialogCancel>
               Batal
             </AlertDialogCancel>
+
             <AlertDialogAction
-              onClick={() => {
-                if (deleteId) {
-                  onDelete(deleteId)
-                  setDeleteId(null)
-                }
-              }}
-              className="bg-destructive text-destructive-foreground"
+              onClick={confirmDelete}
+              className="bg-destructive text-white"
             >
               Hapus
             </AlertDialogAction>
+
           </AlertDialogFooter>
+
         </AlertDialogContent>
+
       </AlertDialog>
 
-    </div>
+    </>
   )
 }

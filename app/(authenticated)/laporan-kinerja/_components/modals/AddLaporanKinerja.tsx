@@ -1,16 +1,31 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select"
+
+import { Badge } from "@/components/ui/badge"
+
+import { X } from "lucide-react"
+
+import { toast } from "sonner"
 
 import type { LaporanKinerjaItem } from "../LaporanKinerjaClient"
 
@@ -19,6 +34,16 @@ interface Props {
   onClose: () => void
   onSave: (item: LaporanKinerjaItem) => void
   initialData?: LaporanKinerjaItem | null
+  permintaanList: {
+    id: string
+    pemda: string
+    menu: string
+  }[]
+  masterPegawai: {
+    id: string
+    nama_pegawai: string
+    jabatan: string
+  }[]
 }
 
 export default function AddLaporanKinerja({
@@ -26,173 +51,354 @@ export default function AddLaporanKinerja({
   onClose,
   onSave,
   initialData = null,
+  permintaanList,
+  masterPegawai,
 }: Props) {
-  const emptyForm: Omit<LaporanKinerjaItem, "id"> = {
-  pemda: "",
-  nama_aplikasi: "",
-  menu: "",
-  pelaksana: "",
-  status: 0,
-  laporan_progress: "",
-  attachments: [],
-}
 
-  const [form, setForm] = useState(emptyForm)
+  const [permintaan, setPermintaan] = useState("")
 
-  // 🔥 PREFILL OTOMATIS
+  const [selectedProgrammer, setSelectedProgrammer] =
+    useState<string[]>([])
+
+  const [progress, setProgress] = useState("")
+
+  const [status, setStatus] = useState(0)
+
+  const programmerOptions = useMemo(() => {
+
+    return masterPegawai.filter(
+      (p) => p.jabatan === "Programmer - Level 1"
+    )
+
+  }, [masterPegawai])
+
   useEffect(() => {
-    if (initialData) {
-      const { id, ...rest } = initialData
-      setForm(rest)
-    } else {
-      setForm(emptyForm)
-    }
-  }, [initialData, open])
 
-  const handleChange = (key: string, value: any) => {
-    setForm((prev) => ({ ...prev, [key]: value }))
+    if (initialData) {
+
+      setPermintaan(initialData.permintaan)
+
+      setProgress(initialData.progress)
+
+      setStatus(initialData.status)
+
+      const ids = programmerOptions
+        .filter((p) =>
+          initialData.programmer?.includes(p.nama_pegawai)
+        )
+        .map((p) => p.id)
+
+      setSelectedProgrammer(ids)
+
+    } else {
+
+      setPermintaan("")
+      setProgress("")
+      setStatus(0)
+      setSelectedProgrammer([])
+
+    }
+
+  }, [initialData, open, programmerOptions])
+
+  const handleAddProgrammer = (id: string) => {
+
+    if (!selectedProgrammer.includes(id)) {
+
+      setSelectedProgrammer((prev) => [...prev, id])
+
+    }
+
+  }
+
+  const handleRemoveProgrammer = (id: string) => {
+
+    setSelectedProgrammer((prev) =>
+      prev.filter((p) => p !== id)
+    )
+
   }
 
   const handleSubmit = () => {
+
+    if (!permintaan) {
+
+      toast.error("Silakan pilih permintaan terlebih dahulu")
+
+      return
+    }
+
+    if (selectedProgrammer.length === 0) {
+
+      toast.error("Minimal pilih satu programmer")
+
+      return
+    }
+
+    if (!progress) {
+
+      toast.error("Progress pekerjaan belum diisi")
+
+      return
+    }
+
+    const programmerNames = selectedProgrammer.map((id) => {
+
+      const pegawai =
+        programmerOptions.find((p) => p.id === id)
+
+      return pegawai?.nama_pegawai || ""
+
+    })
+
+    const now = new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ")
+
     const newItem: LaporanKinerjaItem = {
-      id: initialData?.id ?? Date.now().toString(),
-      ...form,
+
+      id: initialData?.id ?? crypto.randomUUID(),
+
+      permintaan,
+
+      programmer: programmerNames.join(", "),
+
+      progress,
+
+      status,
+
+      created_at: initialData?.created_at ?? now,
+
+      updated_at: now,
     }
 
     onSave(newItem)
+
+    toast.success(
+      initialData
+        ? "Laporan berhasil diperbarui"
+        : "Laporan berhasil ditambahkan"
+    )
+
     onClose()
   }
 
-  const wajibText = (
-    <p className="text-xs text-muted-foreground mt-1">
-      *Wajib diisi
-    </p>
-  )
-
   return (
+
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-h-[80vh] overflow-y-auto">
+
+      <DialogContent className="sm:max-w-lg">
+
         <DialogHeader>
+
           <DialogTitle>
-            {initialData ? "Edit Laporan Kinerja" : "Tambah Laporan Kinerja"}
+
+            {initialData
+              ? "Edit Laporan Kinerja"
+              : "Tambah Laporan Kinerja"}
+
           </DialogTitle>
+
         </DialogHeader>
 
         <div className="space-y-4">
 
-          <div>
-            <Label>Pemda</Label>
-            <Input
-              value={form.pemda}
-              onChange={(e) => handleChange("pemda", e.target.value)}
-            />
-            {wajibText}
+          {/* PERMINTAAN */}
+
+          <div className="space-y-1">
+
+            <Label>Permintaan</Label>
+
+            <Select
+              value={permintaan}
+              onValueChange={setPermintaan}
+            >
+
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih permintaan..." />
+              </SelectTrigger>
+
+              <SelectContent>
+
+                {permintaanList.map((p) => (
+
+                  <SelectItem
+                    key={p.id}
+                    value={`${p.pemda} - ${p.menu}`}
+                  >
+                    {p.pemda} - {p.menu}
+                  </SelectItem>
+
+                ))}
+
+              </SelectContent>
+
+            </Select>
+
+            <p className="text-xs text-muted-foreground">
+              Pilih permintaan pekerjaan yang akan dilaporkan progresnya
+            </p>
+
           </div>
 
-          <div>
-            <Label>Nama Aplikasi</Label>
-            <Input
-              value={form.nama_aplikasi}
-              onChange={(e) => handleChange("nama_aplikasi", e.target.value)}
-            />
-            {wajibText}
+          {/* PROGRAMMER */}
+
+          <div className="space-y-1">
+
+            <Label>Programmer</Label>
+
+            <Select onValueChange={handleAddProgrammer}>
+
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih programmer..." />
+              </SelectTrigger>
+
+              <SelectContent>
+
+                {programmerOptions.map((p) => (
+
+                  <SelectItem
+                    key={p.id}
+                    value={p.id}
+                  >
+                    {p.nama_pegawai}
+                  </SelectItem>
+
+                ))}
+
+              </SelectContent>
+
+            </Select>
+
+            <p className="text-xs text-muted-foreground">
+              Pilih satu atau lebih programmer yang mengerjakan tugas ini
+            </p>
+
           </div>
 
-          <div>
-            <Label>Menu</Label>
-            <Input
-              value={form.menu}
-              onChange={(e) => handleChange("menu", e.target.value)}
-            />
-            {wajibText}
-          </div>
+          {selectedProgrammer.length > 0 && (
 
-          <div>
-            <Label>Pelaksana</Label>
-            <Input
-              value={form.pelaksana}
-              onChange={(e) => handleChange("pelaksana", e.target.value)}
+            <div className="flex flex-wrap gap-2">
+
+              {selectedProgrammer.map((id) => {
+
+                const programmer =
+                  programmerOptions.find(
+                    (p) => p.id === id
+                  )
+
+                if (!programmer) return null
+
+                return (
+
+                  <Badge
+                    key={id}
+                    variant="secondary"
+                    className="flex items-center gap-2"
+                  >
+
+                    {programmer.nama_pegawai}
+
+                    <button
+                      onClick={() =>
+                        handleRemoveProgrammer(id)
+                      }
+                    >
+                      <X size={14} />
+                    </button>
+
+                  </Badge>
+
+                )
+              })}
+
+            </div>
+
+          )}
+
+          {/* PROGRESS */}
+
+          <div className="space-y-1">
+
+            <Label>Progress</Label>
+
+            <Textarea
+              value={progress}
+              onChange={(e) =>
+                setProgress(e.target.value)
+              }
+              placeholder="Tuliskan perkembangan pekerjaan saat ini..."
             />
-            {wajibText}
+
+            <p className="text-xs text-muted-foreground">
+              Jelaskan progres pekerjaan yang sudah dilakukan
+            </p>
+
           </div>
 
           {/* STATUS */}
-<div>
-  <Label>Status</Label>
 
-  <div className="grid grid-cols-5 gap-2 mt-2">
-    {[0, 25, 50, 75, 100].map((value) => {
-      const colorMap: Record<number, string> = {
-        0: "bg-gray-400",
-        25: "bg-red-500",
-        50: "bg-orange-500",
-        75: "bg-yellow-400",
-        100: "bg-green-500",
-      }
+          <div className="space-y-1">
 
-      const isActive = form.status === value
+            <Label>Status Progress</Label>
 
-      return (
-        <button
-          key={value}
-          type="button"
-          onClick={() => handleChange("status", value)}
-          className={`text-white text-sm rounded-md py-2 transition 
-            ${colorMap[value]} 
-            ${isActive ? "ring-2 ring-black" : "opacity-80 hover:opacity-100"}
-          `}
-        >
-          {value}%
-        </button>
-      )
-    })}
-  </div>
+            <div className="grid grid-cols-5 gap-2 mt-2">
 
-  <p className="text-xs text-muted-foreground mt-1">
-    *Wajib diisi
-  </p>
-</div>
+              {[0,25,50,75,100].map((value) => {
 
-          <div>
-            <Label>Laporan Progress Oleh Pelaksana</Label>
-            <Textarea
-              value={form.laporan_progress}
-              onChange={(e) =>
-                handleChange("laporan_progress", e.target.value)
-              }
-            />
-            {wajibText}
-          </div>
+                const colorMap: Record<number,string> = {
+                  0:"bg-gray-400",
+                  25:"bg-red-500",
+                  50:"bg-orange-500",
+                  75:"bg-yellow-400",
+                  100:"bg-green-500",
+                }
 
-          <div>
-            <Label>Attachment</Label>
-            <Input
-              type="file"
-              multiple
-              onChange={(e) => {
-                if (!e.target.files) return
-                const files = Array.from(e.target.files).map((file) => ({
-                  name: file.name,
-                  url: "#",
-                }))
-                handleChange("attachments", files)
-              }}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Opsional
+                const active = status === value
+
+                return (
+
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setStatus(value)}
+                    className={`text-white text-sm rounded-md py-2 ${colorMap[value]} ${active ? "ring-2 ring-black" : ""}`}
+                  >
+                    {value}%
+                  </button>
+
+                )
+              })}
+
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Pilih persentase progres penyelesaian pekerjaan
             </p>
+
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
+
+            <Button
+              variant="outline"
+              onClick={onClose}
+            >
               Batal
             </Button>
+
             <Button onClick={handleSubmit}>
               Simpan
             </Button>
+
           </div>
+
         </div>
+
       </DialogContent>
+
     </Dialog>
+
   )
 }
